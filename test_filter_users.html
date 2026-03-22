@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test filterUsers() Function</title>
+    <style>
+        .user-card {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 10px 0;
+            display: block;
+        }
+        .filter-section {
+            background: #f5f5f5;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .test-results {
+            background: #e8f5e9;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 4px solid #4caf50;
+        }
+        .test-fail {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>Filter Users Test</h1>
+    
+    <div class="filter-section">
+        <h2>Filters</h2>
+        <input type="text" id="searchUser" placeholder="Search..." onkeyup="filterUsers()">
+        <select id="filterDept" onchange="filterUsers()">
+            <option value="">All Departments</option>
+            <option value="requester">Requester</option>
+            <option value="it_admin">IT Admin</option>
+            <option value="treasury">Treasury</option>
+        </select>
+        <select id="filterStatus" onchange="filterUsers()">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+        </select>
+    </div>
+    
+    <h2>Users</h2>
+    <div id="usersList">
+        <div class="user-card" data-username="john_doe" data-fullname="John Doe" data-dept="requester" data-status="active">
+            John Doe (@john_doe) - Requester - Active
+        </div>
+        <div class="user-card" data-username="jane_smith" data-fullname="Jane Smith" data-dept="it_admin" data-status="active">
+            Jane Smith (@jane_smith) - IT Admin - Active
+        </div>
+        <div class="user-card" data-username="bob_jones" data-fullname="Bob Jones" data-dept="treasury" data-status="inactive">
+            Bob Jones (@bob_jones) - Treasury - Inactive
+        </div>
+        <div class="user-card" data-username="alice_wilson" data-fullname="Alice Wilson" data-dept="requester" data-status="inactive">
+            Alice Wilson (@alice_wilson) - Requester - Inactive
+        </div>
+        <div class="user-card" data-username="charlie_brown" data-fullname="Charlie Brown" data-dept="it_admin" data-status="active">
+            Charlie Brown (@charlie_brown) - IT Admin - Active
+        </div>
+    </div>
+    
+    <div id="testResults"></div>
+    
+    <script>
+        /**
+         * Filter users by search term, department, and activity status
+         * Implements combined filter logic with AND operation (Requirement 7.6)
+         * 
+         * All filters work simultaneously:
+         * - Search: Matches username OR full name (case-insensitive)
+         * - Department: Matches selected department (or all if not selected)
+         * - Status: Matches active/inactive status (or all if not selected)
+         * 
+         * A user card is shown only if it matches ALL applied filters (AND logic)
+         */
+        function filterUsers() {
+            const searchTerm = document.getElementById('searchUser').value.toLowerCase();
+            const deptFilter = document.getElementById('filterDept').value;
+            const statusFilter = document.getElementById('filterStatus').value;
+            
+            const userCards = document.querySelectorAll('.user-card');
+            
+            userCards.forEach(card => {
+                const username = card.dataset.username.toLowerCase();
+                const fullname = card.dataset.fullname.toLowerCase();
+                const dept = card.dataset.dept;
+                const status = card.dataset.status;
+                
+                // Check each filter criterion
+                const matchesSearch = username.includes(searchTerm) || fullname.includes(searchTerm);
+                const matchesDept = !deptFilter || dept === deptFilter;
+                const matchesStatus = !statusFilter || status === statusFilter;
+                
+                // Show card only if ALL criteria match (AND operation)
+                if (matchesSearch && matchesDept && matchesStatus) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        // Automated tests
+        function runTests() {
+            const results = [];
+            
+            // Test 1: No filters - all users visible
+            resetFilters();
+            filterUsers();
+            results.push({
+                name: 'Test 1: No filters',
+                expected: 5,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 5
+            });
+            
+            // Test 2: Search only - "john"
+            resetFilters();
+            document.getElementById('searchUser').value = 'john';
+            filterUsers();
+            results.push({
+                name: 'Test 2: Search "john"',
+                expected: 1,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 1
+            });
+            
+            // Test 3: Department only - "requester"
+            resetFilters();
+            document.getElementById('filterDept').value = 'requester';
+            filterUsers();
+            results.push({
+                name: 'Test 3: Department "requester"',
+                expected: 2,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 2
+            });
+            
+            // Test 4: Status only - "active"
+            resetFilters();
+            document.getElementById('filterStatus').value = 'active';
+            filterUsers();
+            results.push({
+                name: 'Test 4: Status "active"',
+                expected: 3,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 3
+            });
+            
+            // Test 5: Combined - search "smith" + department "it_admin"
+            resetFilters();
+            document.getElementById('searchUser').value = 'smith';
+            document.getElementById('filterDept').value = 'it_admin';
+            filterUsers();
+            results.push({
+                name: 'Test 5: Search "smith" + Department "it_admin"',
+                expected: 1,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 1
+            });
+            
+            // Test 6: Combined - department "requester" + status "active"
+            resetFilters();
+            document.getElementById('filterDept').value = 'requester';
+            document.getElementById('filterStatus').value = 'active';
+            filterUsers();
+            results.push({
+                name: 'Test 6: Department "requester" + Status "active"',
+                expected: 1,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 1
+            });
+            
+            // Test 7: Combined - all three filters
+            resetFilters();
+            document.getElementById('searchUser').value = 'charlie';
+            document.getElementById('filterDept').value = 'it_admin';
+            document.getElementById('filterStatus').value = 'active';
+            filterUsers();
+            results.push({
+                name: 'Test 7: Search "charlie" + Department "it_admin" + Status "active"',
+                expected: 1,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 1
+            });
+            
+            // Test 8: Combined - no matches
+            resetFilters();
+            document.getElementById('searchUser').value = 'john';
+            document.getElementById('filterDept').value = 'treasury';
+            filterUsers();
+            results.push({
+                name: 'Test 8: Search "john" + Department "treasury" (no match)',
+                expected: 0,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 0
+            });
+            
+            // Test 9: Case insensitive search
+            resetFilters();
+            document.getElementById('searchUser').value = 'ALICE';
+            filterUsers();
+            results.push({
+                name: 'Test 9: Case insensitive search "ALICE"',
+                expected: 1,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 1
+            });
+            
+            // Test 10: Search by full name
+            resetFilters();
+            document.getElementById('searchUser').value = 'wilson';
+            filterUsers();
+            results.push({
+                name: 'Test 10: Search by full name "wilson"',
+                expected: 1,
+                actual: countVisibleCards(),
+                pass: countVisibleCards() === 1
+            });
+            
+            // Display results
+            displayResults(results);
+            resetFilters();
+            filterUsers();
+        }
+        
+        function resetFilters() {
+            document.getElementById('searchUser').value = '';
+            document.getElementById('filterDept').value = '';
+            document.getElementById('filterStatus').value = '';
+        }
+        
+        function countVisibleCards() {
+            const cards = document.querySelectorAll('.user-card');
+            let count = 0;
+            cards.forEach(card => {
+                if (card.style.display !== 'none') {
+                    count++;
+                }
+            });
+            return count;
+        }
+        
+        function displayResults(results) {
+            const container = document.getElementById('testResults');
+            const allPassed = results.every(r => r.pass);
+            
+            let html = `<div class="test-results ${allPassed ? '' : 'test-fail'}">`;
+            html += `<h2>Test Results: ${results.filter(r => r.pass).length}/${results.length} Passed</h2>`;
+            
+            results.forEach(result => {
+                const icon = result.pass ? '✅' : '❌';
+                html += `<div>${icon} ${result.name}: Expected ${result.expected}, Got ${result.actual}</div>`;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+        
+        // Run tests on page load
+        window.onload = function() {
+            setTimeout(runTests, 500);
+        };
+    </script>
+</body>
+</html>
